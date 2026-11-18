@@ -23,23 +23,29 @@ import com.livesignalmap.mobile.data.FloorMapLoader
 import kotlin.math.min
 import com.livesignalmap.mobile.data.model.FloorRegion
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.runtime.remember
-import com.livesignalmap.mobile.ui.mapper.HeatmapColorMapper
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.listSaver
 import android.graphics.Paint
 
+private val OffsetSaver = listSaver<Offset, Float>(
+    save = { offset ->
+        listOf(offset.x, offset.y)
+    },
+    restore = { values ->
+        Offset(
+            x = values[0],
+            y = values[1]
+        )
+    }
+)
 @Composable
 fun InteractiveFloorPlan(
+    regions: List<FloorRegion>,
     modifier: Modifier = Modifier,
     selectedRegionId: String? = null,
     regionColors: Map<String, Color> = emptyMap(),
     onRegionSelected: (FloorRegion?) -> Unit = {}
 ) {
-    val context = LocalContext.current
-
-    val regions = remember(context) {
-        FloorMapLoader.loadRegions(context)
-    }
-
     val points = remember(regions) {
         regions.flatMap { it.polygon }
     }
@@ -57,8 +63,16 @@ fun InteractiveFloorPlan(
         }
     }
 
-    var zoom by remember { mutableFloatStateOf(1f) }
-    var pan by remember { mutableStateOf(Offset.Zero) }
+
+    var zoom by rememberSaveable {
+        mutableFloatStateOf(1f)
+    }
+
+    var pan by rememberSaveable(
+        stateSaver = OffsetSaver
+    ) {
+        mutableStateOf(Offset.Zero)
+    }
     val density = LocalDensity.current
     val paddingPx = with(density) { 24.dp.toPx() }
 
@@ -79,12 +93,10 @@ fun InteractiveFloorPlan(
         ): Float {
             val scaledMapSize = mapSize * currentZoom
 
-            // Если карта меньше экрана, держим её по центру
             if (scaledMapSize <= canvasSize) {
                 return 0f
             }
 
-            // Карта больше экрана: не допускаем пустоты за её краями
             val maxPan = (scaledMapSize - canvasSize) / 2f
 
             return proposed.coerceIn(-maxPan, maxPan)
@@ -126,7 +138,6 @@ fun InteractiveFloorPlan(
 
                     val zoomRatio = newZoom / oldZoom
 
-                    // Сохраняем точку под пальцами на месте
                     val canvasCenter = Offset(
                         x = size.width / 2f,
                         y = size.height / 2f
@@ -204,8 +215,6 @@ fun InteractiveFloorPlan(
 
                     val centerX = (size.width - mapWidth * baseScale) / 2f
                     val centerY = (size.height - mapHeight * baseScale) / 2f
-
-                    // Обратное преобразование: экран -> координаты JSON
                     val mapPoint = Offset(
                         x = (
                                 (tapPosition.x - size.width / 2f - pan.x) / zoom +

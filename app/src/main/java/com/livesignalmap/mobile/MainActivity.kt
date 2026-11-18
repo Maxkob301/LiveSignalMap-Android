@@ -7,14 +7,11 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.Modifier
 import androidx.core.view.doOnPreDraw
-import com.livesignalmap.mobile.ui.screens.HeatmapScreen
+import com.livesignalmap.mobile.ui.screens.MainScreen
 import com.livesignalmap.mobile.ui.theme.LiveSignalMapTheme
+
 
 class MainActivity : ComponentActivity() {
 
@@ -41,13 +38,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             LiveSignalMapTheme {
-                Scaffold(
-                    modifier = Modifier.fillMaxSize()
-                ) { innerPadding ->
-                    HeatmapScreen(
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                MainScreen()
             }
 
             SideEffect {

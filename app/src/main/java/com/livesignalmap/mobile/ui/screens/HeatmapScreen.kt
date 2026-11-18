@@ -24,7 +24,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.livesignalmap.mobile.ui.components.NetworkModeSelector
 import com.livesignalmap.mobile.ui.model.NetworkMode
-import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalContext
+import com.livesignalmap.mobile.data.FloorMapLoader
 import com.livesignalmap.mobile.data.model.MobileHeatmapDto
 import com.livesignalmap.mobile.data.model.WifiHeatmapDto
 import com.livesignalmap.mobile.ui.mapper.HeatmapColorMapper
@@ -37,17 +39,30 @@ fun HeatmapScreen(
 ) {
     val uiState by heatmapViewModel.uiState.collectAsStateWithLifecycle()
 
-    var selectedRegion by remember {
-        mutableStateOf<FloorRegion?>(null)
+    val context = LocalContext.current
+
+    val regions = remember(context) {
+        FloorMapLoader.loadRegions(context)
     }
-    var selectedNetworkMode by remember {
+
+    var selectedRegionId by rememberSaveable {
+        mutableStateOf<String?>(null)
+    }
+
+    var selectedNetworkMode by rememberSaveable {
         mutableStateOf(NetworkMode.WIFI)
     }
 
-    // Последнее выбранное помещение сохраняется
-    // на время анимации закрытия.
-    var displayedRegion by remember {
-        mutableStateOf<FloorRegion?>(null)
+    var displayedRegionId by rememberSaveable {
+        mutableStateOf<String?>(null)
+    }
+
+    val selectedRegion = remember(selectedRegionId, regions) {
+        regions.firstOrNull { it.id == selectedRegionId }
+    }
+
+    val displayedRegion = remember(displayedRegionId, regions) {
+        regions.firstOrNull { it.id == displayedRegionId }
     }
 
 
@@ -105,18 +120,17 @@ fun HeatmapScreen(
         modifier = modifier.fillMaxSize()
     ) {
         InteractiveFloorPlan(
+            regions = regions,
             modifier = Modifier.fillMaxSize(),
-            selectedRegionId = selectedRegion?.id,
-
+            selectedRegionId = selectedRegionId,
             regionColors = regionColors,
             onRegionSelected = { region ->
-                selectedRegion = region
+                selectedRegionId = region?.id
 
                 if (region != null) {
-                    displayedRegion = region
+                    displayedRegionId = region.id
                 }
             }
-
         )
 
         NetworkModeSelector(
@@ -181,7 +195,7 @@ fun HeatmapScreen(
                     wifiData = selectedWifiData,
                     mobileData = selectedMobileData,
                     onClose = {
-                        selectedRegion = null
+                        selectedRegionId = null
                     },
                     modifier = Modifier.fillMaxWidth()
                 )

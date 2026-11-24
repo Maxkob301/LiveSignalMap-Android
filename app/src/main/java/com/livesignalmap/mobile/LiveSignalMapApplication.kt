@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.room.Room
 import com.livesignalmap.mobile.data.local.AppDatabase
 import com.livesignalmap.mobile.data.repository.MeasurementRepository
+import com.livesignalmap.mobile.data.speedtest.FakeSpeedTestService
+import com.livesignalmap.mobile.domain.service.SpeedTestService
 
 class LiveSignalMapApplication : Application() {
 
@@ -16,5 +18,8 @@ class LiveSignalMapApplication : Application() {
     }
     val measurementRepository: MeasurementRepository by lazy {
         MeasurementRepository(database.measurementDao())
+    }
+    val speedTestService: SpeedTestService by lazy {
+        FakeSpeedTestService()
     }
 }
